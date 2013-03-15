@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using System.Diagnostics.Contracts;
 
 namespace MinWriter
 {
@@ -28,8 +29,14 @@ namespace MinWriter
             /// </value>
             public short Milliseconds
             {
-                get { return milliseconds; }
-                set { milliseconds = value; }
+                get {
+                    Contract.Ensures(Contract.Result<short>() >= 0);
+                    return milliseconds; 
+                }
+                set {
+                    Contract.Requires<ArgumentException>(value >= 0, "Milliseconds must not be negative.");
+                    milliseconds = value; 
+                }
             }
 
 
@@ -46,8 +53,12 @@ namespace MinWriter
             /// </value>
             public byte Seconds
             {
-                get { return seconds; }
-                set { seconds = value; }
+                get {
+                    return seconds; 
+                }
+                set {
+                    seconds = value; 
+                }
             }
 
             /// <summary>
@@ -63,8 +74,12 @@ namespace MinWriter
             /// </value>
             public byte Minutes
             {
-                get { return minutes; }
-                set { minutes = value; }
+                get {
+                    return minutes; 
+                }
+                set {
+                    minutes = value; 
+                }
             }
 
             /// <summary>
@@ -103,6 +118,7 @@ namespace MinWriter
             /// <param name="hours">The hours left on the countdown.</param>
             public TimerEventArgs(short milliseconds, byte seconds, byte minutes, byte hours)
             {
+                Contract.Requires<ArgumentException>(milliseconds >=0,"Milliseconds must not be negative");
                 this.milliseconds = milliseconds;
                 this.seconds = seconds;
                 this.minutes = minutes;
@@ -153,8 +169,16 @@ namespace MinWriter
         /// </value>
         public short Milliseconds
         {
-            get { return milliseconds; }
-            set { milliseconds = value; }
+            get
+            {
+                Contract.Ensures(Contract.Result<short>() >= 0);
+                return milliseconds;
+            }
+            set
+            {
+                Contract.Requires<ArgumentException>(value >= 0, "Milliseconds must not be negative.");
+                milliseconds = value;
+            }
         }
 
 
@@ -215,7 +239,7 @@ namespace MinWriter
         public Countdown(TimeSpan interval)
         {
             timer = new DispatcherTimer();
-            timer.Interval = interval;
+            timer.Interval = interval.Duration();
             timer.Tick += tick;
         }
 
