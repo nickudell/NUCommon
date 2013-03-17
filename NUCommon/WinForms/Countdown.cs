@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Threading;
+using System.Windows.Forms;
 using System.Diagnostics.Contracts;
 
-namespace Common.WPF
+namespace Common.WinForms
 {
     /// <summary>
     /// WPF-based timer that counts down from a provided time frame to 0.
@@ -16,10 +16,19 @@ namespace Common.WPF
         #region Events
         public class TimerEventArgs : EventArgs
         {
+            private ulong ticks;
+
+            public ulong Ticks
+            {
+                get { return ticks; }
+                set { ticks = value; }
+            }
+            
+
             /// <summary>
             /// The milliseconds left on the countdown.
             /// </summary>
-            private short milliseconds;
+            private ushort milliseconds;
 
             /// <summary>
             /// Gets or sets the milliseconds left on the countdown.
@@ -27,10 +36,10 @@ namespace Common.WPF
             /// <value>
             /// The milliseconds left on the countdown.
             /// </value>
-            public short Milliseconds
+            public ushort Milliseconds
             {
                 get {
-                    Contract.Ensures(Contract.Result<short>() >= 0);
+                    Contract.Ensures(Contract.Result<ushort>() >= 0);
                     return milliseconds; 
                 }
                 set {
@@ -99,6 +108,15 @@ namespace Common.WPF
                 set { hours = value; }
             }
 
+            private ulong days;
+
+            public ulong Days
+            {
+                get { return days; }
+                set { days = value; }
+            }
+            
+
             /// <summary>
             /// Initializes a new instance of the <see cref="TimerEventArgs"/> class with a value of 0 for the milliseconds, seconds, minutes and hours remaining values.
             /// </summary>
@@ -116,13 +134,14 @@ namespace Common.WPF
             /// <param name="seconds">The seconds left on the countdown.</param>
             /// <param name="minutes">The minutes left on the countdown.</param>
             /// <param name="hours">The hours left on the countdown.</param>
-            public TimerEventArgs(short milliseconds, byte seconds, byte minutes, byte hours)
+            public TimerEventArgs(ulong ticks)
             {
-                Contract.Requires<ArgumentException>(milliseconds >=0,"Milliseconds must not be negative");
-                this.milliseconds = milliseconds;
-                this.seconds = seconds;
-                this.minutes = minutes;
-                this.hours = hours;
+                this.ticks = ticks;
+                this.milliseconds = (ushort)(ticks % 1000);
+                this.seconds = (byte)((ticks % 60000) / 1000);
+                this.minutes = (byte)((ticks % 3600000) / 60000);
+                this.hours = (byte)((ticks % 86400000) / 3600000);
+                this.days = (ulong)(ticks / 86400000);
             }
 
             /// <summary>
@@ -156,10 +175,6 @@ namespace Common.WPF
 
         #endregion
         #region Properties
-        /// <summary>
-        /// The milliseconds left on the countdown.
-        /// </summary>
-        private short milliseconds;
 
         /// <summary>
         /// Gets or sets the milliseconds left on the countdown.
@@ -167,25 +182,15 @@ namespace Common.WPF
         /// <value>
         /// The milliseconds left on the countdown.
         /// </value>
-        public short Milliseconds
+        public ushort Milliseconds
         {
             get
             {
-                Contract.Ensures(Contract.Result<short>() >= 0);
-                return milliseconds;
-            }
-            set
-            {
-                Contract.Requires<ArgumentException>(value >= 0, "Milliseconds must not be negative.");
-                milliseconds = value;
+                Contract.Ensures(Contract.Result<ushort>() >= 0);
+                Contract.Ensures(Contract.Result<ushort>() < 1000);
+                return (ushort)(ticks % 1000);
             }
         }
-
-
-        /// <summary>
-        /// The seconds left on the countdown.
-        /// </summary>
-        private byte seconds;
 
         /// <summary>
         /// Gets or sets the seconds left on the countdown.
@@ -195,14 +200,13 @@ namespace Common.WPF
         /// </value>
         public byte Seconds
         {
-            get { return seconds; }
-            set { seconds = value; }
+            get
+            {
+                Contract.Ensures(Contract.Result<byte>() >= 0);
+                Contract.Ensures(Contract.Result<byte>() < 60);
+                return (byte)((ticks % 60000)/1000);
+            }
         }
-
-        /// <summary>
-        /// The minutes left on the countdown.
-        /// </summary>
-        private byte minutes;
 
         /// <summary>
         /// Gets or sets the minutes left on the countdown.
@@ -212,14 +216,13 @@ namespace Common.WPF
         /// </value>
         public byte Minutes
         {
-            get { return minutes; }
-            set { minutes = value; }
+            get
+            {
+                Contract.Ensures(Contract.Result<byte>() >= 0);
+                Contract.Ensures(Contract.Result<byte>() < 60);
+                return (byte)((ticks % 3600000) / 60000);
+            }
         }
-
-        /// <summary>
-        /// The hours left on the countdown.
-        /// </summary>
-        private byte hours;
 
         /// <summary>
         /// Gets or sets the hours left on the countdown.
@@ -229,25 +232,56 @@ namespace Common.WPF
         /// </value>
         public byte Hours
         {
-            get { return hours; }
-            set { hours = value; }
+            get
+            {
+                Contract.Ensures(Contract.Result<byte>() >= 0);
+                Contract.Ensures(Contract.Result<byte>() < 24);
+                return (byte)((ticks % 86400000) / 3600000);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the days left on the countdown.
+        /// </summary>
+        /// <value>
+        /// The days left on the countdown.
+        /// </value>
+        public ulong Days
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<ushort>() >= 0);
+                return (ulong)(ticks / 86400000);
+            }
         }
         #endregion
 
-        private DispatcherTimer timer;
+        /// <summary>
+        /// The milliseconds remaining until the alarm fires
+        /// </summary>
+        private ulong ticks;
 
+        /// <summary>
+        /// The internal timer
+        /// </summary>
+        private Timer timer;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Countdown"/> class.
+        /// </summary>
+        /// <param name="interval">The tick interval.</param>
         public Countdown(TimeSpan interval)
         {
-            timer = new DispatcherTimer();
-            timer.Interval = interval.Duration();
+            timer = new Timer();
+            timer.Interval = interval.Duration().Milliseconds;
             timer.Tick += tick;
         }
 
-        public Countdown()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Countdown"/> class with a tick interval of 1.
+        /// </summary>
+        public Countdown() : this(TimeSpan.FromMilliseconds(1))
         {
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(1);
-            timer.Tick += tick;
         }
 
         /// <summary>
@@ -257,12 +291,14 @@ namespace Common.WPF
         /// <param name="minutes">The minutes remaining.</param>
         /// <param name="seconds">The seconds remaining.</param>
         /// <param name="milliseconds">The milliseconds remaining.</param>
-        public void Start(byte hours, byte minutes, byte seconds, short milliseconds)
+        public void Start(ulong days, byte hours, byte minutes, byte seconds, ushort milliseconds)
         {
-            this.milliseconds = milliseconds;
-            this.seconds = seconds;
-            this.minutes = minutes;
-            this.hours = hours;
+            Contract.Requires<ArgumentException>(days <= 213503982334ul,"Days cannot be larger than 213503982335.");
+            Contract.Requires<ArgumentException>(hours < 24, "Hours cannot be larger than 23.");
+            Contract.Requires<ArgumentException>(minutes <60,"Minutes cannot be larger than 59.");
+            Contract.Requires<ArgumentException>(seconds < 60, "Seconds cannot be larger than 59.");
+            Contract.Requires<ArgumentException>(milliseconds < 1000, "Milliseconds cannot be larger than 999");
+            ticks = days *86400000ul + hours * 3600000ul + minutes * 60000ul + seconds * 1000ul;
             timer.Start();
         }
 
@@ -288,10 +324,7 @@ namespace Common.WPF
         public void Stop()
         {
             timer.Stop();
-            milliseconds = 0;
-            seconds = 0;
-            minutes = 0;
-            hours = 0;
+            ticks = 0;
         }
 
         /// <summary>
@@ -301,41 +334,18 @@ namespace Common.WPF
         /// <param name="e">The e.</param>
         private void tick(object sender, object e)
         {
-            if (seconds == 0)
+            if (ticks <= (ulong)timer.Interval)
             {
-                if (minutes == 0)
-                {
-                    if (hours == 0)
-                    {
-                        //Countdown has ended
-                        if (Alarm != null)
-                        {
-                            Alarm(this, new TimerEventArgs());
-                            timer.Stop();
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        //Flip the minutes back to 59
-                        hours--;
-                        minutes = 59;
-                    }
-                }
-                else
-                {
-                    minutes--;
-                }
-                //flip the seconds back to 59
-                seconds = 59;
+                Alarm(this, new TimerEventArgs());
+                Stop();
             }
             else
             {
-                seconds--;
+                ticks = ticks - (ulong)timer.Interval;
             }
             if (Tick != null)
             {
-                Tick(this, new TimerEventArgs(milliseconds, seconds, minutes, hours));
+                Tick(this, new TimerEventArgs(ticks));
             }
         }
     }
