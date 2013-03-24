@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WPF
+namespace Common
 {
     /// <summary>
     /// Struct holding two integer components
